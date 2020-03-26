@@ -43,7 +43,13 @@ historypage = urllib.request.urlopen(HTML)
 soup = bs.BeautifulSoup(historypage,'html.parser')
 makeitastring = ''.join(map(str, soup))
 
-soup
+
+# Busquem els pobles que pertanyen a ** Barcelona **
+
+tableProvincia = soup.find('table', {'class':'table table-condensed precio-medio-table'})
+
+print(tableProvincia.contents)
+
 #makeitastring
 
 
