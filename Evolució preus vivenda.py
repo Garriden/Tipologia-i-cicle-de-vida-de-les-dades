@@ -46,9 +46,20 @@ makeitastring = ''.join(map(str, soup))
 
 # Busquem els pobles que pertanyen a ** Barcelona **
 
-tableProvincia = soup.find('table', {'class':'table table-condensed precio-medio-table'})
+tableProv = soup.find('table', {'class':'table table-condensed precio-medio-table'})
+strtableProv = ''.join(map(str, tableProv))
 
-print(tableProvincia.contents)
+tbody = tableProv.find('tbody')
+strtbody = ''.join(map(str, tbody))
+  #currentIndex=0
+for row in tbody.findAll("tr"):
+    cells = row.findAll('td')    
+    link = cells[0].find('a')
+    poble = link.find(text=True)
+    print (poble)
+    
+  #  if (currentIndex >0) # la primera línia es el header 
+
 
 #makeitastring
 
