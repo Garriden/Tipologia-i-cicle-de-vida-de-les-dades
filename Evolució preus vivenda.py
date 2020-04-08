@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import io
-
+import urllib.robotparser
 
 # In[5]:
 
@@ -54,33 +54,43 @@ makeitastring = ''.join(map(str, soup))
 # ciutats que es troben en aquesta pàgina que son les ciutats de Barcelona i les seves variacions de preus mensual, els últims 3 mesos
 # anual i preu euro/ metre quadrat.
 
-def obtenirCiutatsiVariacio(htmlSoup):
-    tableProv = soup.find('table', {'class':'table table-condensed precio-medio-table'})
+#def obtenirCiutatsiVariacio(htmlSoup):
+#    tableProv = soup.find('table', {'class':'table table-condensed precio-medio-table'})
 
-    tbody = tableProv.find('tbody')
+#    tbody = tableProv.find('tbody')
 
-    llistaVarCiutats=[]
-    for row in tbody.findAll("tr"):
-        cells = row.findAll('td')    
-        link = cells[0].find('a')
-        ciutat = link.find(text=True)
-        #print(ciutat)
-        varMensual = cells[1].find(text=True)
-        var3mesos = cells[2].find(text=True)
-        varAnual = cells[3].find(text=True)
-        eumetre = cells[4].find(text=True)
-        element=[ciutat,varMensual,var3mesos,varAnual,eumetre]
-        llistaVarCiutats.append(element)
+#    llistaVarCiutats=[]
+#    for row in tbody.findAll("tr"):
+#        cells = row.findAll('td')    
+#        link = cells[0].find('a')
+#        ciutat = link.find(text=True)
+#        #print(ciutat)
+#        varMensual = cells[1].find(text=True)
+#        var3mesos = cells[2].find(text=True)
+#        varAnual = cells[3].find(text=True)
+#        eumetre = cells[4].find(text=True)
+#        element=[ciutat,varMensual,var3mesos,varAnual,eumetre]
+#        llistaVarCiutats.append(element)
         
         
-    return llistaVarCiutats
+ #   return llistaVarCiutats
 
 
-HTML = "https://www.trovimap.com/precio-vivienda/barcelona"
 
-VarCiutat = obtenirCiutatsiVariacio(soup)
 
-print(VarCiutat[0])
+def generarCSV(taula,nomFitxer):
+    
+    taula.to_csv(nomFitxer + '.csv', header=True, index = False)
+    
+#df_numeros.to_csv('numeros.csv', header=False, index=False)
+
+
+
+#HTML = "https://www.trovimap.com/precio-vivienda/barcelona"
+
+#VarCiutat = obtenirCiutatsiVariacio(soup)
+
+#print(VarCiutat[0])
 
 
 # In[ ]:
@@ -100,17 +110,29 @@ print(VarCiutat[0])
 
 HTML = "https://www.trovimap.com/precio-vivienda/"
 
+# mirem a robots.txt per veure si hi ha pàgines bloquejades a robots
+
+rp = urllib.robotparser.RobotFileParser()
+rp.set_url('https://www.trovimap.com/robots.txt')
+rp.read()
+user_agent= '*'
+
 
 # In[10]:
 
+pais = "espana"
 
-HTMLEspana = HTML + "espana"
+HTMLEspana = HTML + pais
 
-df = pd.read_html(HTMLEspana)
-dfProvinciesEspana = df[0]
-dfProvinciesEspana = dfProvinciesEspana.rename(columns={"Unnamed: 0": 'Provincies'})
+# Comprovem si està definit a reobots.txt que ens deixa fer web scrapping d'aquesta url
 
-dfProvinciesEspana.head()
+if rp.can_fetch(user_agent, HTMLEspana):
+    
+    df = pd.read_html(HTMLEspana)
+    dfProvinciesEspana = df[0]
+    dfProvinciesEspana = dfProvinciesEspana.rename(columns={"Unnamed: 0": 'Provincies'})
+
+    dfProvinciesEspana.head()
 
 
 # ### Obtenim una taula amb la variació menusal de cada provincia de l'estat.
@@ -120,34 +142,35 @@ dfProvinciesEspana.head()
 # In[11]:
 
 
-dfProvinciesEspana.iloc[0]['Provincies']
-
+    dfProvinciesEspana.iloc[0]['Provincies']
+else :
+    print ("Pàgina bloquejada per robots,txt: " + HTMLEspana)
 
 # ### Si volem obtenir una taula, tenint per files les ciutats més importants de Catalunta:
 
 # In[12]:
 
-
+    
 # Agafar la taula per cada una de les quatre provincies de Catalunya.
-dfBarcelona = pd.read_html(HTML+"barcelona")
-dfTarragona = pd.read_html(HTML+"tarragona")
-dfGirona = pd.read_html(HTML+"girona")
-dfLleida = pd.read_html(HTML+"lleida")
-dfBarcelona = dfBarcelona[0]
-dfTarragona = dfTarragona[0]
-dfGirona = dfGirona[0]
-dfLleida = dfLleida[0]
+    dfBarcelona = pd.read_html(HTML+"barcelona")
+    dfTarragona = pd.read_html(HTML+"tarragona")
+    dfGirona = pd.read_html(HTML+"girona")
+    dfLleida = pd.read_html(HTML+"lleida")
+    dfBarcelona = dfBarcelona[0]
+    dfTarragona = dfTarragona[0]
+    dfGirona = dfGirona[0]
+    dfLleida = dfLleida[0]
 
 # Concatenar Taules.
-dfCatalunya = pd.concat([dfBarcelona, dfTarragona], ignore_index=True)
-dfCatalunya = pd.concat([dfCatalunya, dfGirona], ignore_index=True)
-dfCatalunya = pd.concat([dfCatalunya, dfLleida], ignore_index=True)
+    dfCatalunya = pd.concat([dfBarcelona, dfTarragona], ignore_index=True)
+    dfCatalunya = pd.concat([dfCatalunya, dfGirona], ignore_index=True)
+    dfCatalunya = pd.concat([dfCatalunya, dfLleida], ignore_index=True)
 
 # Renombrar columnes.
-dfCatalunya = dfCatalunya.rename(columns={"Unnamed: 0": 'Ciutat', "Variación Mensual": 'Variació mensual',
-                                "Variación 3 meses": 'Variació tres messos', "Variación anual": 'Variació anual'})
+    dfCatalunya = dfCatalunya.rename(columns={"Unnamed: 0": 'Ciutat', "Variación Mensual": 'Variació mensual',
+                                          "Variación 3 meses": 'Variació tres messos', "Variación anual": 'Variació anual'})
 
-dfCatalunya.tail()
+    dfCatalunya.tail()
 
 
 # -------
@@ -166,7 +189,7 @@ makeitastring = ''.join(map(str, soup))
 # Buscar el patró dins del html on es guarda els noms de les provincies per despres buscar-les en url. 
 capitals = '/'.join(map(str, re.findall("precio-vivienda(.+?)\">",makeitastring)))
 capitals = capitals[46:570]
-print(capitals)
+#print(capitals)
 
 # Ja tenim un array amb tots els noms de les provincies que haurem de posar a la url.
 capitalsArray = capitals.split('//')
@@ -177,8 +200,10 @@ capitalsArray
 
 
 HTML = "https://www.trovimap.com/precio-vivienda/"
-HTML + capitalsArray[25]
+HTMLCapitals = HTML + capitalsArray[25]
 
+
+    
 df = pd.read_html(HTML + capitalsArray[25])
 df[0].head()
 
@@ -191,12 +216,15 @@ dfEspana = pd.DataFrame()
 for capital in capitalsArray:
     if capital != "ceuta" and capital != "soria":
         # Per a cada url agafar la taula
-        dfAux = pd.read_html(HTML+capital)
-        dfAux = dfAux[0]
-        #Anar concatenant ciutats
-        dfEspana = pd.concat([dfEspana, dfAux], ignore_index=True)
-        print(capital)
-    
+        if rp.can_fetch(user_agent, HTML+capital):
+            
+            dfAux = pd.read_html(HTML+capital)
+            dfAux = dfAux[0]
+            #Anar concatenant ciutats
+            dfEspana = pd.concat([dfEspana, dfAux], ignore_index=True)
+            print(capital)
+        else: 
+            print ("Pàgina bloquejada per robots,txt: " + HTML+capital)
     
 # Renombrar columnes.
 dfEspana = dfEspana.rename(columns={"Unnamed: 0": 'Ciutat', "Variación Mensual": 'Variació mensual',
@@ -206,5 +234,15 @@ dfEspana.tail()
 
 
 # ### Ja tenim taules amb les variacions econòmiques de les ciutats més importants tant de Catalunya com d'España.
+
+# gravem a fixter csv totes les poblacions d'espanya amb les seves variacions de preu
+
+generarCSV (dfEspana,pais)
+
+# gravem també un altre csv amb les variacions generals de cada província d'espanya
+
+generarCSV(dfProvinciesEspana,'Provincies')
+
+
 
 # ---------
