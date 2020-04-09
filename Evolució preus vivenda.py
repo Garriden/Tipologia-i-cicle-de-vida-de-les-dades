@@ -40,20 +40,20 @@ def obtenirComparativa(ciutat,HTML):
    
     divComparativa = soup.find('div', {'class':'locality-stats__table hidden-xs'})
 
-    tablaComp = []
-    capcalera = ["Poblacion","Menoss 60 m2 / Menos de 100.000€","Menos 60 m2 / Entre 100.000 € y 250.000 €","Menos 60 m2 / Más de 250.000€","Entre 60 m2 y 120 m2 / Menos de 100.000€","Entre 60 m2 y 120 m2 / Entre 100.000 € y 250.000 €","Entre 60 m2 y 120 m2 / Más de 250.000€","Más de 120 m2 / Menos de 100.000€","Más de 120 m2 / Entre 100.000 € y 250.000 €","Más de 120 m2 / Más de 250.000€"]
-    tablaComp.append (capcalera)
+    #tablaComp = []
+   # capcalera = ["Poblacion","Menoss 60 m2 / Menos de 100.000€","Menos 60 m2 / Entre 100.000 € y 250.000 €","Menos 60 m2 / Más de 250.000€","Entre 60 m2 y 120 m2 / Menos de 100.000€","Entre 60 m2 y 120 m2 / Entre 100.000 € y 250.000 €","Entre 60 m2 y 120 m2 / Más de 250.000€","Más de 120 m2 / Menos de 100.000€","Más de 120 m2 / Entre 100.000 € y 250.000 €","Más de 120 m2 / Más de 250.000€"]
+   # tablaComp.append (capcalera)
     
     #Recorrem els div i a la classe rate-value trobem el valor que busquem. Ho guardem tot a la taula tablaComp
     
-    elements= []
-    elements.append(ciutat)
+    tablacomp= []
+    tablacomp.append(ciutat)
     for rates in divComparativa.findAll ('div',{'class':'rate-value'}): 
-        elements.append(rates.find(text=True))
+        tablacomp.append(rates.find(text=True))
    
-    tablaComp.append(elements)
+   # tablaComp.append(elements)
 
-    return (tablaComp)
+    return (tablacomp)
 
 
 
@@ -170,22 +170,83 @@ df[0].head()
 
 # Veiem que serveix, ara només hem de posar-lo en un loop per obtenir totes les ciutats importants d'España.
 dfEspana = pd.DataFrame()
+tPoblacions = []
+
 for capital in capitalsArray:
     if capital != "ceuta" and capital != "soria":
+     #if capital == "tarragona":   
         # Per a cada url agafar la taula
         if rp.can_fetch(user_agent, HTML+capital):
             
             dfAux = pd.read_html(HTML+capital)
             dfAux = dfAux[0]
+            
+            # Busquem el nom del poble amb el que es forma el link per buscar a dins la taula comparativa
+            
+            poblacionsPage = urllib.request.urlopen(HTML+capital)
+            soup2 = bs.BeautifulSoup(poblacionsPage,'html.parser')
+            makeitastring = ''.join(map(str, soup2))
+            
+            poblacions = '/'.join(map(str, re.findall("precio-vivienda(.+?)\">",makeitastring)))
+            poblacionsArray = poblacions.split('//')
+            
+            # La primera posició és un títol i la segona posició és la provincia per tant els eliminem
+            # La última posició és un link a estadístiques. També l'eliminem.
+            poblacionsArray.pop(0)
+            poblacionsArray.pop(0)
+            poblacionsArray.pop(len(poblacionsArray)-1)
+            
+    # Busquem per cada poblacio de cada capital els valors de la taula comparativa
+            TP1 = []
+            TP2 = []
+            TP3 = []
+            TP4 = []
+            TP5 = []
+            TP6 = []
+            TP7 = []
+            TP8 = []
+            TP9 = []
+            for pobl in poblacionsArray:            
+                    tComp = obtenirComparativa (pobl,HTML+pobl)
+                    TP1.append(tComp[1])
+                    TP2.append(tComp[2])
+                    TP3.append(tComp[3])
+                    TP4.append(tComp[4])
+                    TP5.append(tComp[5])
+                    TP6.append(tComp[6])
+                    TP7.append(tComp[7])
+                    TP8.append(tComp[8])
+                    TP9.append(tComp[9])
+            
+            dfAux = dfAux.assign (T1=TP1)
+            dfAux = dfAux.assign (T2=TP2)
+            dfAux = dfAux.assign (T3=TP3)
+            dfAux = dfAux.assign (T4=TP4)
+            dfAux = dfAux.assign (T5=TP5)
+            dfAux = dfAux.assign (T6=TP6)
+            dfAux = dfAux.assign (T7=TP7)
+            dfAux = dfAux.assign (T8=TP8)
+            dfAux = dfAux.assign (T9=TP9)
+            
+         
             #Anar concatenant ciutats
             dfEspana = pd.concat([dfEspana, dfAux], ignore_index=True)
-            print(capital)
+            #print(capital)
         else: 
             print ("Pàgina bloquejada per robots,txt: " + HTML+capital)
     
 # Renombrar columnes.
 dfEspana = dfEspana.rename(columns={"Unnamed: 0": 'Ciutat', "Variación Mensual": 'Variació mensual',
-                                "Variación 3 meses": 'Variació tres messos', "Variación anual": 'Variació anual'})
+                                "Variación 3 meses": 'Variació tres messos', "Variación anual": 'Variació anual',
+                                "T1":'Menos 60 m2 / Menos de 100.000 Euros',"T2":'Menos 60 m2 / Entre 100.000 Euros y 250.000 Euros',
+                                "T3":'Menos 60 m2 / Más de 250.000 euros',
+                                "T4":'Entre 60 m2 y 120 m2 / Menos de 100.000 Euros',
+                                "T5":'Entre 60 m2 y 120 m2 / Entre 100.000 Euros y 250.000 Euros',
+                                "T6":'Entre 60 m2 y 120 m2 / Más de 250.000 Euros',
+                                "T7":'Más de 120 m2 / Menos de 100.000 euros',
+                                "T8":'Más de 120 m2 / Entre 100.000 euros y 250.000 euros',
+                                "T9":'Más de 120 m2 / Más de 250.000 euros'                             
+                                })
     
 dfEspana.tail()
 
@@ -200,6 +261,6 @@ generarCSV (dfEspana,pais)
 
 generarCSV(dfProvinciesEspana,'Provincies')
 
-
+print("Fi scrapping")
 
 # ---------
